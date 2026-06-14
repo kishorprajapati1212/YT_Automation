@@ -1,0 +1,27 @@
+name: Daily Auto-Shorts
+on:
+  schedule:
+    - cron: '0 14 * * *'
+    - cron: '30 3 * * *' # 3:00 UTC is 9:00 AM IST (India Standard Time) 0 3
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      # --- NEW: Teach GitHub to install the Python TTS engine ---
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - run: pip install edge-tts
+      # ----------------------------------------------------------
+      - run: npm install
+      - run: node index.js
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DEAPI_TOKEN: ${{ secrets.DEAPI_TOKEN }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
