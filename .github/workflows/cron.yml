@@ -2,7 +2,8 @@ name: Daily Auto-Shorts
 on:
   schedule:
     - cron: '0 14 * * *'
-    - cron: '30 3 * * *' # 3:00 UTC is 9:00 AM IST (India Standard Time) 0 3
+    - cron: '30 3 * * *' # 3:00 UTC is 9:00 AM IST (India Standard Time)
+  workflow_dispatch: # <-- ADD THIS SO YOU CAN TEST IT MANUALLY!
     
 # CRITICAL: This gives the bot permission to save its memory back to GitHub
 permissions:
@@ -46,9 +47,9 @@ jobs:
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           DEAPI_TOKEN: ${{ secrets.DEAPI_TOKEN }}
-          CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+          CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
 
       # 8. Save the Story Memory for tomorrow
       - name: Save Bot Memory
