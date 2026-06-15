@@ -7,6 +7,7 @@ export const config = {
     CLIENT_SECRET:  process.env.YOUTUBE_CLIENT_SECRET,
     DEAPI_TOKEN: process.env.DEAPI_TOKEN,
     HF_API_KEY: process.env.HF_API_KEY || process.env.HUGGINGFACE_API_KEY,
+    MONGO_URI: process.env.MONGO_URI,
     WORKSPACE_DIR: process.cwd(),
 };
 if (!config.GROQ_API_KEY || !config.DEAPI_TOKEN) {

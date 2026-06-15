@@ -36,5 +36,5 @@ export async function uploadToYouTube(filePath, title, description) {
         }
     });
 
-    return res.data;
+    return res.data.id;
 }
