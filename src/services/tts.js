@@ -5,13 +5,12 @@ export async function generateVoiceover(narrationText) {
     console.log("2. Generating Voiceover...");
     fs.writeFileSync('output/script.txt', narrationText);
 
-    // Check if local venv exists. If yes, use it directly. If no, assume GitHub Actions.
     let edgeTtsCmd = 'edge-tts';
     if (fs.existsSync('./venv/bin/python') && fs.existsSync('./venv/bin/edge-tts')) {
         edgeTtsCmd = './venv/bin/python ./venv/bin/edge-tts';
     }
 
-   // Generate Voiceover via Edge-TTS (Boosted Volume)
-   execSync(`${edgeTtsCmd} --voice en-US-ChristopherNeural --volume=+50% -f output/script.txt --write-media output/audio.mp3 --write-subtitles output/subs.vtt`);
+    // REMOVED subtitle generation. Added +50% volume boost.
+    execSync(`${edgeTtsCmd} --voice en-US-ChristopherNeural --volume=+50% -f output/script.txt --write-media output/audio.mp3`);
     console.log("   ✓ Voiceover generated.");
 }

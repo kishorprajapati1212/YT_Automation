@@ -27,20 +27,21 @@ export async function generateScriptAndPrompts(state) {
     1. Write a fast-paced, highly engaging narration (around 120 words).
     2. ${endingInstructions}
 
-    RULES FOR IMAGE PROMPTS:
+    RULES FOR IMAGE PROMPTS (CRITICAL FOR VIRALITY):
     1. Generate exactly 5 highly descriptive image prompts to match the narration.
-    2. CRITICAL FOR VISUAL CONSISTENCY: Every single image prompt MUST end with this exact phrase: "${masterStyleTag}".
-    3. Keep character descriptions exactly the same across prompts if referring to the same person.
+    2. THUMBNAIL HACK: The FIRST image prompt will be seen as the thumbnail. It MUST be an extreme close-up, highly intriguing, high-contrast image (e.g., "A glowing red eye in the dark", "A terrified face looking up").
+    3. MOVEMENT: Describe every image as mid-action. Use words like "running", "falling", "wind blowing violently", "reaching out" so the images feel alive, not static.
+    4. Every single image prompt MUST end with this exact phrase: "${masterStyleTag}".
 
     OUTPUT FORMAT:
-    You MUST output ONLY a raw JSON object. No markdown, no introduction.
+    You MUST output ONLY a raw JSON object. No markdown.
     {
         "topic": "The Name of the Mystery",
         "total_parts": 3,
         "narration": "The full spoken script here...",
         "image_prompts": [
-            "A dark forest... ${masterStyleTag}",
-            "A glowing artifact... ${masterStyleTag}"
+            "Extreme close up of a dusty diary opening mid-air... ${masterStyleTag}",
+            "A shadowy figure running through the fog... ${masterStyleTag}"
         ],
         "secret_climax": "A hidden note to yourself on where to take the story in the next part."
     }`;
@@ -48,7 +49,7 @@ export async function generateScriptAndPrompts(state) {
     try {
         const chatCompletion = await groq.chat.completions.create({
             messages: [{ role: "system", content: systemPrompt }],
-            model: "llama3-8b-8192", // Or whichever Groq model you prefer
+            model: "llama-3.3-70b-versatile", // Or whichever Groq model you prefer
             temperature: 0.7,
             response_format: { type: "json_object" }
         });
