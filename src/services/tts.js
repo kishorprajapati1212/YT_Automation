@@ -11,7 +11,7 @@ export async function generateVoiceover(narrationText) {
         edgeTtsCmd = './venv/bin/python ./venv/bin/edge-tts';
     }
 
-    // Generate Voiceover via Edge-TTS
-    execSync(`${edgeTtsCmd} --voice en-US-ChristopherNeural -f output/script.txt --write-media output/audio.mp3 --write-subtitles output/subs.vtt`);
+   // Generate Voiceover via Edge-TTS (Boosted Volume)
+   execSync(`${edgeTtsCmd} --voice en-US-ChristopherNeural --volume=+50% -f output/script.txt --write-media output/audio.mp3 --write-subtitles output/subs.vtt`);
     console.log("   ✓ Voiceover generated.");
 }

@@ -5,12 +5,11 @@ import ffmpeg from 'fluent-ffmpeg';
 import { config } from '../config/env.js';
 
 export async function renderVideo(data) {
-    console.log("4. Calculating exact audio sync and building cinematic camera moves...");
+    console.log("4. Calculating cinematic crossfades and audio mixing...");
 
-    // --- 1. NEW: PRE-FLIGHT SAFETY CHECKS ---
-    if (!fs.existsSync('output/audio.mp3')) throw new Error("CRITICAL: audio.mp3 is missing! TTS failed.");
-    if (!fs.existsSync('assets/bgm.mp3')) throw new Error("CRITICAL: bgm.mp3 is missing from the assets folder!");
-    if (!fs.existsSync('output/subs.vtt')) throw new Error("CRITICAL: subs.vtt is missing! Subtitles failed.");
+    if (!fs.existsSync('output/audio.mp3')) throw new Error("CRITICAL: audio.mp3 missing!");
+    if (!fs.existsSync('assets/bgm.mp3')) throw new Error("CRITICAL: bgm.mp3 missing!");
+    if (!fs.existsSync('output/subs.vtt')) throw new Error("CRITICAL: subs.vtt missing!");
 
     let audioDuration; 
     try {
@@ -22,43 +21,64 @@ export async function renderVideo(data) {
     }
     
     const fps = 30;
-    const framesPerImage = Math.ceil((audioDuration / data.image_prompts.length) * fps);
+    const imageCount = data.image_prompts.length;
+    const fadeDuration = 0.5; // Half-second smooth crossfade
     
-    // Inputs
+    // Each image needs to be slightly longer to account for the overlapping fade
+    const imageDuration = (audioDuration / imageCount) + fadeDuration;
+    const framesPerClip = Math.ceil(imageDuration * fps);
+    
     let command = ffmpeg()
-        .input('output/audio.mp3') // Input 0: Main Voiceover
-        .input('assets/bgm.mp3');  // Input 1: Background Music (NOW POINTS TO ASSETS)
+        .input('output/audio.mp3') 
+        .input('assets/bgm.mp3'); 
     
     let filterComplex = [];
-    let concatInputs = "";
 
+    // Premium Ken Burns Effects (Calculated dynamically to the exact frame count)
     const cameraMoves = [
-        `z='min(zoom+0.001,1.5)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'`,        // Slow Zoom In
-        `z='1.2':x='(iw-iw/zoom)-(in/50)*(iw-iw/zoom)':y='ih/2-(ih/zoom/2)'`,     // Pan Right to Left
-        `z='1.2':x='(in/50)*(iw-iw/zoom)':y='ih/2-(ih/zoom/2)'`,                  // Pan Left to Right
-        `z='1.2':x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)-(in/50)*(ih-ih/zoom)'`      // Slow Pan Bottom to Top
+        `z='min(zoom+0.0015,1.5)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'`, // Zoom Center
+        `z='1.2':x='(iw-iw/zoom)*(in/${framesPerClip})':y='ih/2-(ih/zoom/2)'`, // Pan Right
+        `z='1.2':x='(iw-iw/zoom)-(iw-iw/zoom)*(in/${framesPerClip})':y='ih/2-(ih/zoom/2)'`, // Pan Left
+        `z='1.2':x='iw/2-(iw/zoom/2)':y='(ih-ih/zoom)*(in/${framesPerClip})'` // Pan Down
     ];
 
-    // Map Images (Inputs 2 through N+1)
-    for (let i = 0; i < data.image_prompts.length; i++) {
-        if (!fs.existsSync(`output/img${i}.jpg`)) throw new Error(`CRITICAL: img${i}.jpg is missing!`);
-        
+    // 1. Process Images & Camera Moves
+    for (let i = 0; i < imageCount; i++) {
+        if (!fs.existsSync(`output/img${i}.jpg`)) throw new Error(`CRITICAL: img${i}.jpg missing!`);
         command = command.input(`output/img${i}.jpg`);
         const moveEffect = cameraMoves[i % cameraMoves.length];
         
-        filterComplex.push(`[${i+2}:v]scale=1080*1.2:1920*1.2,zoompan=${moveEffect}:d=${framesPerImage}:s=1080x1920:fps=${fps}[v${i}]`);
-        concatInputs += `[v${i}]`;
+        filterComplex.push(`[${i+2}:v]scale=1080*1.2:1920*1.2,zoompan=${moveEffect}:d=${framesPerClip}:s=1080x1920:fps=${fps}[v${i}]`);
     }
 
-    filterComplex.push(`${concatInputs}concat=n=${data.image_prompts.length}:v=1:a=0[v_concat]`);
+    // 2. Build the Crossfade (xfade) Chain
+    if (imageCount > 1) {
+        let currentOut = `v0`;
+        let currentLength = imageDuration;
 
-    // --- 2. FIXED: LINUX SUBTITLE COMPATIBILITY ---
+        for (let i = 1; i < imageCount; i++) {
+            const offset = currentLength - fadeDuration;
+            const nextIn = `v${i}`;
+            const outName = (i === imageCount - 1) ? `v_concat` : `x${i}`;
+
+            // Add smooth fade transition
+            filterComplex.push(`[${currentOut}][${nextIn}]xfade=transition=fade:duration=${fadeDuration}:offset=${offset}[${outName}]`);
+
+            currentOut = outName;
+            currentLength = currentLength + imageDuration - fadeDuration;
+        }
+    } else {
+        filterComplex.push(`[v0]copy[v_concat]`);
+    }
+
+    // 3. Burn Subtitles
     const absoluteSubsPath = 'output/subs.vtt';
     filterComplex.push(`[v_concat]subtitles='${absoluteSubsPath}':force_style='FontSize=26,PrimaryColour=&H00FFFF&,OutlineColour=&H000000&,BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=60'[outv]`);
 
-    filterComplex.push(`[1:a]volume=0.1[bgm_low];[0:a][bgm_low]amix=inputs=2:duration=first:dropout_transition=2[outa]`);
+    // 4. Studio Audio Mix (Boost Voice 200%, Drop BGM to 5%)
+    filterComplex.push(`[0:a]volume=2.0[voice_loud];[1:a]volume=0.05[bgm_low];[voice_loud][bgm_low]amix=inputs=2:duration=first:dropout_transition=2[outa]`);
 
-    console.log("5. Rendering Final Animated Video with Mixed Audio...");
+    console.log("5. Rendering Final Video...");
     
     return new Promise((resolve, reject) => {
         command
@@ -73,9 +93,7 @@ export async function renderVideo(data) {
                 '-b:a 192k'
             ])
             .output('output/final_short.mp4')
-            .on('start', (cmdLine) => {
-                console.log("   🎬 FFmpeg render process started...");
-            })
+            .on('start', () => console.log("   🎬 FFmpeg render process started..."))
             .on('end', () => {
                 console.log("   ✓ FFmpeg finished processing completely.");
                 resolve();

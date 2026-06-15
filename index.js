@@ -37,12 +37,15 @@ async function runPipeline() {
         // 4. Audio & BGM
         await generateVoiceover(data.narration);
 
-        // 5. Image Generation
+        // 5. Image Generation (With Anti-Rate-Limit Shield)
         for (let i = 0; i < data.image_prompts.length; i++) {
             console.log(`Processing scene ${i + 1}/${data.image_prompts.length}...`);
             const imgPath = path.join(OUTPUT_DIR, `img${i}.jpg`);
             await generateRealImage(data.image_prompts[i], imgPath, i);
-            await sleep(4000); // Respect API limits
+            
+            // CRITICAL: Sleep for 9 seconds to completely bypass the 8-second API block
+            console.log("   ⏳ Waiting 9s for API cooldown...");
+            await sleep(9000); 
         }
 
         // 6. Final Render
