@@ -1,70 +1,63 @@
-import Groq from 'groq-sdk';
+import Groq from "groq-sdk";
 import { config } from '../config/env.js';
 
 const groq = new Groq({ apiKey: config.GROQ_API_KEY });
 
 export async function generateScriptAndPrompts(state) {
-    console.log(`1. Writing Script (Generating Part ${state.current_part} of ${state.total_parts || '?'})...`);
-    
-    let promptText = "";
+    console.log(`1. Writing Script (Generating Part ${state.current_part})...`);
 
-    if (state.current_part === 1) {
-        // MODE 1: THE HOOK
-        promptText = `You are a viral YouTube Shorts creator. Start a multi-part historical mystery or bizarre fact series.
-        Target: Ages 12-99, PG-13.
-        
-        CRITICAL RULES:
-        - Introduce an incredible, unsolved-sounding mystery.
-        - End on a massive CLIFFHANGER (e.g., "But what they found inside... we'll reveal in Part 2!").
-        - Decide how many parts this story needs to be told properly (choose between 2, 3, 4, or 5).
-        - Narration must be 100-140 words.
-        
-        Return ONLY a JSON object with:
-        1. "narration": The script.
-        2. "image_prompts": Array of exactly 8 descriptive image prompts.
-        3. "topic": A short 3-5 word title for this series.
-        4. "total_parts": Integer between 2 and 5.
-        5. "secret_climax": A master summary of where the story is heading, so you remember it for future parts.`;
-
-    } else if (state.current_part < state.total_parts) {
-        // MODE 2: THE MIDDLE (Twists and Escalation)
-        promptText = `You are a viral YouTube Shorts creator. Write Part ${state.current_part} of a ${state.total_parts}-part historical mystery.
-        Topic: ${state.topic}
-        Master Context & Plot: ${state.context}
-        
-        CRITICAL RULES:
-        - Hook the viewer instantly ("Welcome back to Part ${state.current_part} of...").
-        - Reveal a massive twist or escalate the mystery based on the Master Context. Do NOT reveal the final ending yet.
-        - End on ANOTHER massive cliffhanger for the next part!
-        - Narration must be 100-140 words.
-        
-        Return ONLY a JSON object with:
-        1. "narration": The script.
-        2. "image_prompts": Array of exactly 8 descriptive image prompts.
-        3. "secret_climax": Pass the Master Context back, adding a note about where you just left off.`;
-
+    // --- 1. DYNAMIC CLIFFHANGER LOGIC ---
+    let endingInstructions = "";
+    if (state.current_part === 1 || (state.total_parts && state.current_part < state.total_parts)) {
+        endingInstructions = `The narration MUST end on a massive, terrifying cliffhanger. Cut the story off right when it gets interesting. The absolute last sentence MUST be exactly: "But what they found next... changes everything. Subscribe for Part ${state.current_part + 1}."`;
     } else {
-        // MODE 3: THE FINALE
-        promptText = `You are a viral YouTube Shorts creator. Write the FINALE (Part ${state.current_part} of ${state.total_parts}) of a historical mystery.
-        Topic: ${state.topic}
-        Master Context & Story So Far: ${state.context}
-        
-        CRITICAL RULES:
-        - Welcome them to the finale ("This is the finale of...").
-        - Reveal the massive climax, the truth, or the final twist.
-        - End with a satisfying conclusion and ask them to subscribe for the next mystery.
-        - Narration must be 100-140 words.
-        
-        Return ONLY a JSON object with:
-        1. "narration": The script.
-        2. "image_prompts": Array of exactly 8 descriptive image prompts.`;
+        endingInstructions = `This is the grand finale. Reveal the massive twist or shocking truth. The absolute last sentence MUST be exactly: "And that is the terrifying truth they tried to hide. Subscribe for more mysteries."`;
     }
 
-    const completion = await groq.chat.completions.create({
-        messages: [{ role: "user", content: promptText }],
-        model: "llama-3.3-70b-versatile",
-        response_format: { type: "json_object" }
-    });
-    
-    return JSON.parse(completion.choices[0].message.content);
+    // --- 2. VISUAL CONSISTENCY LOGIC ---
+    // By forcing a strict "Master Style Tag" on every single prompt, Hugging Face will generate identical looking images.
+    const masterStyleTag = "cinematic dark documentary style, hyper-realistic photography, 8k resolution, moody lighting, ultra-detailed";
+
+    const systemPrompt = `You are an elite, viral YouTube Shorts scriptwriter and AI image director. 
+    You are currently writing Part ${state.current_part} of an ongoing mystery story.
+    ${state.topic ? `The main topic is: ${state.topic}.` : 'Pick a brand new, highly engaging historical or unsolved mystery.'}
+    ${state.context ? `Here is the secret context from the last video to continue the story: ${state.context}` : ''}
+
+    RULES FOR SCRIPT:
+    1. Write a fast-paced, highly engaging narration (around 120 words).
+    2. ${endingInstructions}
+
+    RULES FOR IMAGE PROMPTS:
+    1. Generate exactly 5 highly descriptive image prompts to match the narration.
+    2. CRITICAL FOR VISUAL CONSISTENCY: Every single image prompt MUST end with this exact phrase: "${masterStyleTag}".
+    3. Keep character descriptions exactly the same across prompts if referring to the same person.
+
+    OUTPUT FORMAT:
+    You MUST output ONLY a raw JSON object. No markdown, no introduction.
+    {
+        "topic": "The Name of the Mystery",
+        "total_parts": 3,
+        "narration": "The full spoken script here...",
+        "image_prompts": [
+            "A dark forest... ${masterStyleTag}",
+            "A glowing artifact... ${masterStyleTag}"
+        ],
+        "secret_climax": "A hidden note to yourself on where to take the story in the next part."
+    }`;
+
+    try {
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [{ role: "system", content: systemPrompt }],
+            model: "llama3-8b-8192", // Or whichever Groq model you prefer
+            temperature: 0.7,
+            response_format: { type: "json_object" }
+        });
+
+        const responseText = chatCompletion.choices[0].message.content;
+        return JSON.parse(responseText);
+
+    } catch (error) {
+        console.error("❌ Groq API Error:", error.message);
+        throw new Error("Failed to generate script from LLM.");
+    }
 }
