@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { config } from '../config/env.js';
 
 export async function getVideoAnalytics(videoId) {
-    console.log(`📊 Fetching Analytics for Video: ${videoId}...`);
+    console.log(`📊 Querying YouTube Studio for Video: ${videoId}...`);
 
     const oAuth2Client = new google.auth.OAuth2(
         config.CLIENT_ID,
@@ -10,7 +10,6 @@ export async function getVideoAnalytics(videoId) {
         "http://localhost"
     );
 
-    // This uses your new Master Token!
     oAuth2Client.setCredentials({
         refresh_token: config.REFRESH_TOKEN 
     });
@@ -20,14 +19,12 @@ export async function getVideoAnalytics(videoId) {
         auth: oAuth2Client
     });
 
-    // YouTube Analytics requires explicit YYYY-MM-DD dates.
-    // Data takes about 48 hours to fully process on YouTube's end.
     const today = new Date();
     const endDate = today.toISOString().split('T')[0];
     
-    // Look back up to 5 days to ensure we catch the data
-    const pastDate = new Date(today);
-    pastDate.setDate(pastDate.getDate() - 5); 
+    // Look back up to 30 days to guarantee we capture data processing windows
+    const pastDate = new Date();
+    pastDate.setDate(pastDate.getDate() - 30); 
     const startDate = pastDate.toISOString().split('T')[0];
 
     try {
@@ -35,29 +32,26 @@ export async function getVideoAnalytics(videoId) {
             ids: 'channel==MINE',
             startDate: startDate,
             endDate: endDate,
-            metrics: 'views,likes,averageViewDuration,averageViewPercentage', // The vital stats
+            metrics: 'views,likes,averageViewDuration,averageViewPercentage',
             filters: `video==${videoId}`,
             dimensions: 'video'
         });
 
-        // The API returns a raw array. We map it to a clean object.
         if (res.data.rows && res.data.rows.length > 0) {
-            const dataRow = res.data.rows[0];
+            const row = res.data.rows[0];
             const stats = {
-                views: dataRow[1],
-                likes: dataRow[2],
-                averageViewDurationSeconds: dataRow[3],
-                averageViewPercentage: dataRow[4] // This is your retention hook!
+                views: parseInt(row[1], 10),
+                likes: parseInt(row[2], 10),
+                avgDurationSeconds: parseFloat(row[3]),
+                retentionPercentage: parseFloat(row[4]) // 0% to 100%+
             };
-            
-            console.log("   ✅ Analytics harvested:", stats);
+            console.log("   ✅ Data successfully retrieved:", stats);
             return stats;
-        } else {
-            console.log("   ⏳ Analytics not fully populated by YouTube yet. We will try again tomorrow.");
-            return null;
         }
+        
+        return null;
     } catch (error) {
-        console.error("   ❌ Analytics API Error:", error.message);
+        console.error(`   ❌ Failed to pull telemetry for ${videoId}:`, error.message);
         return null;
     }
 }

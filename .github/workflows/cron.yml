@@ -43,7 +43,9 @@ jobs:
 
       # 7. Run the actual bot!
       - name: Run Auto-Shorts Pipeline
-        run: node index.js
+        run: |
+          node critic.js
+          node index.js
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           DEAPI_TOKEN: ${{ secrets.DEAPI_TOKEN }}
@@ -51,6 +53,7 @@ jobs:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       # 8. Save the Story Memory for tomorrow
       - name: Save Bot Memory

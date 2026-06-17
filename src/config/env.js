@@ -8,6 +8,7 @@ export const config = {
     DEAPI_TOKEN: process.env.DEAPI_TOKEN,
     HF_API_KEY: process.env.HF_API_KEY || process.env.HUGGINGFACE_API_KEY,
     MONGO_URI: process.env.MONGO_URI,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     WORKSPACE_DIR: process.cwd(),
 };
 if (!config.GROQ_API_KEY || !config.DEAPI_TOKEN) {

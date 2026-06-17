@@ -8,6 +8,10 @@ import { uploadToYouTube } from './src/services/youtube.js';
 import { sleep } from './src/utils/helpers.js';
 import { getStoryState, saveStoryState } from './src/utils/state.js';
 
+// Database Connections
+import { connectDB } from './src/config/db.js';
+import { VideoHistory } from './src/models/VideoHistory.js';
+
 const OUTPUT_DIR = 'output';
 
 function clearOutputFolder() {
@@ -20,6 +24,9 @@ async function runPipeline() {
     console.log("🧹 Cache cleared. Starting pipeline...");
 
     try {
+        // Connect to MongoDB Atlas
+        await connectDB();
+
         let currentState = getStoryState();
         const data = await generateScriptAndPrompts(currentState); 
 
@@ -52,7 +59,7 @@ async function runPipeline() {
             videoTitle = `THE TRUTH REVEALED: ${currentState.topic} (Finale) 😱`;
         }
 
-        // Upload and capture the ID
+        // Upload and grab the ID
         const videoId = await uploadToYouTube(
             path.join(OUTPUT_DIR, 'final_short.mp4'),
             videoTitle,
@@ -60,20 +67,20 @@ async function runPipeline() {
         );
         console.log(`🎉 Upload complete: ${videoTitle}`);
 
-        // --- NEW: LOCAL LEDGER SAVE ---
-        console.log("💾 Saving Video ID to local history...");
-        let history = [];
-        if (fs.existsSync('history.json')) {
-            history = JSON.parse(fs.readFileSync('history.json', 'utf8'));
-        }
-        history.push({
-            videoId: videoId || "FAILED_ID",
+        // SAVE LOGS DIRECTLY TO MONGO ATLAS
+        console.log("💾 Writing record to MongoDB Atlas...");
+        await VideoHistory.create({
+            videoId: videoId || "UNKNOWN_ID",
             part: currentState.current_part,
-            date: new Date().toISOString()
+            topic: currentState.topic,
+            scriptUsed: data.narration,
+            imagePrompts: data.image_prompts,
+            reviewed: false,
+            date: new Date()
         });
-        fs.writeFileSync('history.json', JSON.stringify(history, null, 2));
+        console.log("   ✅ MongoDB ledger saved successfully.");
 
-        // Update Memory
+        // Update Memory State
         if (currentState.current_part < total) {
             saveStoryState({
                 current_part: currentState.current_part + 1,
@@ -92,4 +99,11 @@ async function runPipeline() {
     }
 }
 
-runPipeline();
+// THIS COMMAND STOPS THE SCRIPT FROM HANGING
+runPipeline().then(() => {
+    console.log("👋 Pipeline finished all tasks. Exiting cleanly.");
+    process.exit(0); // <--- This forces Node.js to close the terminal immediately
+}).catch(err => {
+    console.error("💥 Critical execution crash:", err);
+    process.exit(1);
+});
