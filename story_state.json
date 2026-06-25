@@ -2,5 +2,8 @@
   "current_part": 1,
   "total_parts": null,
   "topic": "",
-  "context": ""
+  "context": "",
+  "dynamicRules": [
+    "Rule: Condense the script to ensure the spoken delivery duration is strictly under 30 seconds, prioritizing the most shocking details and direct cliffhangers to maximize 'watched full video' metrics and re-watches for enhanced retention across a wider audience."
+  ]
 }
