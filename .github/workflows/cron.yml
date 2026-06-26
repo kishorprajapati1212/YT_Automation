@@ -1,4 +1,4 @@
-name: Daily Auto-Shorts
+name: v2 Daily Auto-Shorts
 on:
   schedule:
     - cron: '0 14 * * *'
