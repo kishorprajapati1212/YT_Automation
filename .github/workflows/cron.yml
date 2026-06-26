@@ -1,0 +1,61 @@
+name: Daily Auto-Shorts
+on:
+  schedule:
+    - cron: '0 14 * * *'
+    - cron: '30 3 * * *' # 3:00 UTC is 9:00 AM IST (India Standard Time)
+  workflow_dispatch: # Allows manual testing via the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  run-v2-bot:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. THE PUPPETEER TRICK: Force GitHub to download the v2 branch code!
+      - name: Checkout V2 Branch
+        uses: actions/checkout@v4
+        with:
+          ref: v2 
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Edge-TTS
+        run: pip install edge-tts
+
+      - name: Install NPM Packages
+        run: npm install
+
+      - name: Run Auto-Shorts V2 Pipeline
+        run: |
+          node critic.js
+          node index.js
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DEAPI_TOKEN: ${{ secrets.DEAPI_TOKEN }}
+          HF_API_KEY: ${{ secrets.HF_API_KEY }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      # 8. THE PUPPETEER SAVE: Explicitly push the memory back to the v2 branch!
+      - name: Save V2 Bot Memory
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add story_state.json
+          git commit -m "🤖 Auto-update v2 story memory" || echo "No state changes to commit"
+          git push origin v2
