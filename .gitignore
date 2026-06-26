@@ -1,0 +1,15 @@
+# Node
+node_modules/
+package-lock.json
+
+# venv
+venv/
+
+# Environment Variables
+.env
+
+# Output (Don't push generated media)
+output/
+
+# Logs
+*.log
