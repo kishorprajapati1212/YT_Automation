@@ -1,9 +1,6 @@
 {
-  "current_part": 3,
-  "total_parts": 3,
-  "topic": "The Somerton Man Mystery",
-  "context": "The unlisted phone number found in the Rubaiyat connects to a mysterious, long-defunct intelligence agency or an individual deeply embedded in Cold War espionage, suggesting the Somerton Man's death was a state-sponsored assassination or a botched spy exchange, revealing a vast, dangerous cover-up for Part 3.",
-  "dynamicRules": [
-    "Rule: Restructure the script to present each critical mystery element as an active, escalating plot point rather than a descriptive observation, ensuring a new layer of intrigue or a direct rhetorical question is introduced every 5-7 seconds to forcefully sustain viewer attention and build continuous suspense towards the final hook."
-  ]
+  "current_part": 1,
+  "total_parts": null,
+  "topic": "",
+  "context": ""
 }
