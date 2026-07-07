@@ -1,9 +1,6 @@
 {
-  "current_part": 1,
-  "total_parts": null,
-  "topic": "",
-  "context": "",
-  "dynamicRules": [
-    "Rule: Integrate an escalating question, a direct call to ponder, or a new paradoxical twist after every two consecutive factual statements, and ensure the explicit Part 2 hook is delivered earlier, specifically by the 85% mark of the total script length."
-  ]
+  "current_part": 2,
+  "total_parts": 3,
+  "topic": "The Dyatlov Pass Nightmare",
+  "context": "Part 2 will reveal the lack of external struggle, the strange coloration of bodies, and various official/unofficial theories (infrasound, military testing, mythical creatures), building suspense towards the most disturbing details and the official cover-up claims."
 }
