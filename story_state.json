@@ -2,5 +2,8 @@
   "current_part": 1,
   "total_parts": null,
   "topic": "",
-  "context": ""
+  "context": "",
+  "dynamicRules": [
+    "Rule: Structure each script segment to deliver a fresh, high-impact plot twist or a critical piece of escalating information every 3-5 seconds, ensuring an uninterrupted flow of curiosity-driven engagement that eliminates any potential for viewer attention lulls."
+  ]
 }
