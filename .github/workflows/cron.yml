@@ -1,6 +1,6 @@
 name: Daily Auto-Shorts
 on:
-  schedule:
+  #schedule:
    # - cron: '0 14 * * *'
    # - cron: '30 3 * * *' # 3:00 UTC is 9:00 AM IST (India Standard Time)
   workflow_dispatch: # <-- ADD THIS SO YOU CAN TEST IT MANUALLY!
